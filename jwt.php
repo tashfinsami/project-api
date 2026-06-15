@@ -23,13 +23,13 @@ function createToken($userId, $secret, $algorithm, $issuer, $expirySeconds)
 /* =========================
    GET TOKEN and VERIFY
 ========================= */
-function getUserId($secret, $algorithm, $issuer)
+function authenticateUser($secret, $algorithm, $issuer)
 {
     $headers = getallheaders();
     $auth = $headers["Authorization"] ?? "";
 
     if (!$auth) {
-        return ["error" => "Token missing"];
+        return ["error" => "Authentication token is missing"];
     }
 
     $token = str_replace("Bearer ", "", $auth);
@@ -44,6 +44,6 @@ function getUserId($secret, $algorithm, $issuer)
         return ["user_id" => $decoded->user_id];
 
     } catch (Exception $e) {
-        return ["error" => "Invalid or expired token"];
+        return ["error" => "Authentication token is invalid or expired"];
     }
 }

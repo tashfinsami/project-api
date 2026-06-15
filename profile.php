@@ -2,13 +2,8 @@
 
 header("Content-Type: application/json");
 
-require_once "db.php";
-require_once "vendor/autoload.php";
-
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
-
-$secret = file_get_contents("secret.key");
+require_once "config.php";
+require_once "jwt.php";
 
 function respond($data) {
     echo json_encode($data);
@@ -24,26 +19,18 @@ $script = $_SERVER["SCRIPT_NAME"];
 $path = str_replace($script, "", $uri);
 
 /* =========================
-   GET TOKEN + VERIFY
-   (used by protected routes)
+   GET USER ID FROM TOKEN
 ========================= */
-function getUserId($secret) {
+function requireUserId($secret, $jwt_algorithm, $jwt_issuer)
+{
+    $result = getUserId($secret, $jwt_algorithm, $jwt_issuer);
 
-    $headers = getallheaders();
-    $auth = $headers["Authorization"] ?? "";
-
-    if (!$auth) {
-        respond(["error" => "Token missing"]);
+    if (isset($result["error"])) {
+        respond(["error" => $result["error"]]);
+        exit;
     }
 
-    $token = str_replace("Bearer ", "", $auth);
-
-    try {
-        $decoded = JWT::decode($token, new Key($secret, "HS256"));
-        return $decoded->user_id;
-    } catch (Exception $e) {
-        respond(["error" => "Invalid or expired token"]);
-    }
+    return $result["user_id"];
 }
 
 /* ======================================================
@@ -51,7 +38,7 @@ function getUserId($secret) {
 ====================================================== */
 if ($method === "GET" && $path === "/me") {
 
-    $id = getUserId($secret);
+    $id = requireUserId($secret, $jwt_algorithm, $jwt_issuer);
 
     $result = $conn->query("
         SELECT id, name, email
@@ -67,7 +54,7 @@ if ($method === "GET" && $path === "/me") {
 ====================================================== */
 elseif ($method === "GET" && $path === "/users") {
 
-    $id_dump = getUserId($secret); //for safety check only
+    $id_dump = requireUserId($secret, $jwt_algorithm, $jwt_issuer); //for safety check only
 
     /* search by email */
     if (isset($_GET["email"])) {
@@ -130,7 +117,7 @@ elseif ($method === "GET" && $path === "/users") {
 ====================================================== */
 elseif ($method === "PUT" && $path === "/me") {
 
-    $id = getUserId($secret);
+    $id = requireUserId($secret, $jwt_algorithm, $jwt_issuer);
 
     $input = json_decode(file_get_contents("php://input"), true);
 
@@ -151,7 +138,7 @@ elseif ($method === "PUT" && $path === "/me") {
 ====================================================== */
 elseif ($method === "DELETE" && $path === "/me") {
 
-    $id = getUserId($secret);
+    $id = requireUserId($secret, $jwt_algorithm, $jwt_issuer);
 
     $conn->query("DELETE FROM users WHERE id=$id");
 

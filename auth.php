@@ -2,13 +2,8 @@
 
 header("Content-Type: application/json");
 
-require_once "db.php";
-require_once "vendor/autoload.php";
-
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
-
-$secret = file_get_contents("secret.key");
+require_once "config.php";
+require_once "jwt.php";
 
 function respond($data) {
     echo json_encode($data);
@@ -63,13 +58,7 @@ if ($path === "/login" && $method === "POST") {
         respond(["error" => "Invalid credentials"]);
     }
 
-    $payload = [
-        "user_id" => $user["id"],
-        "iat" => time(),
-        "exp" => time() + 3600
-    ];
-
-    $token = JWT::encode($payload, $secret, "HS256");
+    $token = createToken($user["id"], $secret, $jwt_algorithm, $jwt_issuer, $jwt_expiry);
 
     respond([
         "message" => "Login successful",

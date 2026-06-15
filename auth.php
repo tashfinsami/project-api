@@ -24,7 +24,7 @@ $path = str_replace($script, "", $uri);
 $data = json_decode(file_get_contents("php://input"), true);
 
 /* =========================
-   SIGNUP (PUBLIC)
+   SIGNUP
 ========================= */
 if ($path === "/signup" && $method === "POST") {
 
@@ -32,6 +32,26 @@ if ($path === "/signup" && $method === "POST") {
     $email = $data["email"];
     $password = password_hash($data["password"], PASSWORD_DEFAULT);
 
+    /* =========================
+       CHECK DUPLICATE EMAIL
+    ========================= */
+    $check = $conn->query("
+        SELECT id FROM users WHERE email='$email' LIMIT 1
+    ");
+
+    if ($check->num_rows > 0) {
+
+        http_response_code(409);
+
+        respond([
+            "status" => "error",
+            "message" => "Email already exists"
+        ]);
+    }
+
+    /* =========================
+       INSERT USER
+    ========================= */
     $conn->query("
         INSERT INTO users(name,email,password)
         VALUES('$name','$email','$password')
@@ -41,18 +61,21 @@ if ($path === "/signup" && $method === "POST") {
 
     respond([
         "status" => "success",
-        "message" => "Signup successful"
+        "message" => "User created successfully"
     ]);
 }
 
 /* =========================
-   LOGIN (ISSUE JWT)
+   LOGIN
 ========================= */
 if ($path === "/login" && $method === "POST") {
 
     $email = $data["email"];
     $password = $data["password"];
 
+    /* =========================
+       AUTHENTICATE USER
+    ========================= */
     $result = $conn->query("
         SELECT * FROM users WHERE email='$email'
     ");
@@ -68,7 +91,10 @@ if ($path === "/login" && $method === "POST") {
             "message" => "Invalid credentials"
         ]);
     }
-
+    
+    /* =========================
+       ISSUE JWT
+    ========================= */
     $token = createToken($user["id"], $secret, $jwt_algorithm, $jwt_issuer, $jwt_expiry);
 
     http_response_code(200);
@@ -81,12 +107,12 @@ if ($path === "/login" && $method === "POST") {
 }
 
 /* =========================
-   fallback
+   FALLBACK
 ========================= */
 
 http_response_code(404);
 
 respond([
     "status" => "error",
-    "message" => "Route not found"
+    "message" => "Resource not found"
 ]);

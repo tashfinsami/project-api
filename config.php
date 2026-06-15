@@ -3,11 +3,20 @@
 /* =====================
    DATABASE CONNECTION
 ===================== */
+
+header("Content-Type: application/json");
+
 $conn = new mysqli("localhost", "root", "", "project_middleware");
 
 if ($conn->connect_error) {
-    header("Content-Type: application/json");
-    die(json_encode(["error" => "DB connection failed"]));
+    http_response_code(500);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "Unable to connect to the database"
+    ]);
+
+    exit;
 }
 
 $conn->set_charset("utf8mb4");

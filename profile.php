@@ -19,18 +19,15 @@ $script = $_SERVER["SCRIPT_NAME"];
 $path = str_replace($script, "", $uri);
 
 /* =========================
-   GET USER ID FROM TOKEN
+   ENFORCE AUTHENTICATION
 ========================= */
-function requireUserId($secret, $jwt_algorithm, $jwt_issuer)
+function requireAuth($authResult)
 {
-    $result = getUserId($secret, $jwt_algorithm, $jwt_issuer);
-
-    if (isset($result["error"])) {
-        respond(["error" => $result["error"]]);
-        exit;
+    if (isset($authResult["error"])) {
+        respond(["message" => $authResult["error"]]);
     }
 
-    return $result["user_id"];
+    return $authResult["user_id"];
 }
 
 /* ======================================================
@@ -38,7 +35,8 @@ function requireUserId($secret, $jwt_algorithm, $jwt_issuer)
 ====================================================== */
 if ($method === "GET" && $path === "/me") {
 
-    $id = requireUserId($secret, $jwt_algorithm, $jwt_issuer);
+    $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer);
+    $id = requireAuth($authResult);
 
     $result = $conn->query("
         SELECT id, name, email
@@ -54,7 +52,8 @@ if ($method === "GET" && $path === "/me") {
 ====================================================== */
 elseif ($method === "GET" && $path === "/users") {
 
-    $id_dump = requireUserId($secret, $jwt_algorithm, $jwt_issuer); //for safety check only
+    $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer); //for safety check only
+    $id = requireAuth($authResult); //only for safety checking
 
     /* search by email */
     if (isset($_GET["email"])) {
@@ -117,7 +116,8 @@ elseif ($method === "GET" && $path === "/users") {
 ====================================================== */
 elseif ($method === "PUT" && $path === "/me") {
 
-    $id = requireUserId($secret, $jwt_algorithm, $jwt_issuer);
+    $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer);
+    $id = requireAuth($authResult);
 
     $input = json_decode(file_get_contents("php://input"), true);
 
@@ -138,7 +138,8 @@ elseif ($method === "PUT" && $path === "/me") {
 ====================================================== */
 elseif ($method === "DELETE" && $path === "/me") {
 
-    $id = requireUserId($secret, $jwt_algorithm, $jwt_issuer);
+    $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer);
+    $id = requireAuth($authResult);
 
     $conn->query("DELETE FROM users WHERE id=$id");
 
@@ -146,7 +147,7 @@ elseif ($method === "DELETE" && $path === "/me") {
 }
 
 /* ======================================================
-   fallback
+   FALLBACK
 ====================================================== */
 else {
     respond(["error" => "Route not found"]);

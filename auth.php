@@ -37,7 +37,12 @@ if ($path === "/signup" && $method === "POST") {
         VALUES('$name','$email','$password')
     ");
 
-    respond(["message" => "Signup successful"]);
+    http_response_code(201);
+
+    respond([
+        "status" => "success",
+        "message" => "Signup successful"
+    ]);
 }
 
 /* =========================
@@ -55,12 +60,21 @@ if ($path === "/login" && $method === "POST") {
     $user = $result->fetch_assoc();
 
     if (!$user || !password_verify($password, $user["password"])) {
-        respond(["error" => "Invalid credentials"]);
+
+        http_response_code(401);
+
+        respond([
+            "status" => "error",
+            "message" => "Invalid credentials"
+        ]);
     }
 
     $token = createToken($user["id"], $secret, $jwt_algorithm, $jwt_issuer, $jwt_expiry);
 
+    http_response_code(200);
+
     respond([
+        "status" => "success",
         "message" => "Login successful",
         "token" => $token
     ]);
@@ -69,4 +83,10 @@ if ($path === "/login" && $method === "POST") {
 /* =========================
    fallback
 ========================= */
-respond(["error" => "Route not found"]);
+
+http_response_code(404);
+
+respond([
+    "status" => "error",
+    "message" => "Route not found"
+]);

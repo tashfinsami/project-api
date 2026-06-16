@@ -78,7 +78,9 @@ function login() {
 
         output.innerHTML = JSON.stringify(data, null, 2);
 
-        if (data.data && data.data.token) {
+        const token = data?.data?.token;
+
+        if (token) {
             localStorage.setItem("token", data.data.token);
             window.location.href = "profile.html";
         }

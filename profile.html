@@ -130,9 +130,9 @@ function loadMe() {
         }
 
         document.getElementById("meBox").innerHTML = `
-            <b>ID:</b> ${data.id}<br>
-            <b>Name:</b> ${data.name}<br>
-            <b>Email:</b> ${data.email}
+            <b>ID:</b> ${data.data.id}<br>
+            <b>Name:</b> ${data.data.name}<br>
+            <b>Email:</b> ${data.data.email}
         `;
     });
 }
@@ -206,7 +206,7 @@ fetch(API + "/users?page=" + page + "&limit=" + limit, {
 
     let html = "";
 
-    data.forEach(user => {
+    data.data.forEach(user => {
         html += `
             <div class="box">
                 <b>ID:</b> ${user.id}<br>
@@ -241,9 +241,9 @@ function searchEmail() {
 
         document.getElementById("emailBox").innerHTML = `
             <div class="box">
-                <b>ID:</b> ${data.id}<br>
-                <b>Name:</b> ${data.name}<br>
-                <b>Email:</b> ${data.email}
+                <b>ID:</b> ${data.data.id}<br>
+                <b>Name:</b> ${data.data.name}<br>
+                <b>Email:</b> ${data.data.email}
             </div>
         `;
     });

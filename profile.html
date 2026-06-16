@@ -124,15 +124,17 @@ function loadMe() {
     .then(res => res.json())
     .then(data => {
 
-        if (data.error) {
-            document.getElementById("meBox").innerHTML = "<b>Not logged in</b>";
+        if (data.status === "error") {
+            document.getElementById("meBox").innerHTML = data.message;
             return;
         }
 
+        const user = data?.data?.user;
+
         document.getElementById("meBox").innerHTML = `
-            <b>ID:</b> ${data.data.id}<br>
-            <b>Name:</b> ${data.data.name}<br>
-            <b>Email:</b> ${data.data.email}
+            <b>ID:</b> ${user.id}<br>
+            <b>Name:</b> ${user.name}<br>
+            <b>Email:</b> ${user.email}
         `;
     });
 }
@@ -152,7 +154,7 @@ function updateMe() {
     })
     .then(res => res.json())
     .then(data => {
-        alert(data.message || data.error);
+        alert(data.message);
         loadMe();
     });
 }
@@ -170,7 +172,7 @@ function deleteMe() {
     })
     .then(res => res.json())
     .then(data => {
-        alert(data.message || data.error);
+        alert(data.message);
         logout();
     });
 }
@@ -199,14 +201,16 @@ fetch(API + "/users?page=" + page + "&limit=" + limit, {
 .then(res => res.json())
 .then(data => {
 
-    if (data.error) {
-        document.getElementById("list").innerHTML = data.error;
+    if (data.status === "error") {
+        document.getElementById("list").innerHTML = data.message;
         return;
     }
 
     let html = "";
 
-    data.data.forEach(user => {
+    const users = data?.data?.users || [];
+
+    users.forEach(user => {
         html += `
             <div class="box">
                 <b>ID:</b> ${user.id}<br>
@@ -234,16 +238,18 @@ function searchEmail() {
     .then(res => res.json())
     .then(data => {
 
-        if (data.error) {
-            document.getElementById("emailBox").innerHTML = "<b>User not found</b>";
+        if (data.status === "error") {
+            document.getElementById("emailBox").innerHTML = data.message;
             return;
         }
 
+        const user = data?.data?.user;
+
         document.getElementById("emailBox").innerHTML = `
             <div class="box">
-                <b>ID:</b> ${data.data.id}<br>
-                <b>Name:</b> ${data.data.name}<br>
-                <b>Email:</b> ${data.data.email}
+                <b>ID:</b> ${user.id}<br>
+                <b>Name:</b> ${user.name}<br>
+                <b>Email:</b> ${user.email}
             </div>
         `;
     });

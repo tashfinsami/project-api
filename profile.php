@@ -44,7 +44,9 @@ if ($method === "GET" && $path === "/me") {
         respond(404, "error", "User not found");
     }
 
-    respond(200, "success", "User profile retrieved", $user);
+    respond(200, "success", "User profile retrieved", [
+        "user" => $user
+    ]);
 }
 
 /* ======================================================
@@ -73,7 +75,9 @@ elseif ($method === "GET" && $path === "/users") {
             respond(404, "error", "User not found");
         }
 
-        respond(200, "success", "User profile retrieved", $user);
+        respond(200, "success", "User profile retrieved", [
+            "user" => $user
+        ]);
     }
 
     /* all users */
@@ -108,7 +112,15 @@ elseif ($method === "GET" && $path === "/users") {
         $users[] = $row;
     }
 
-    respond(200, "success", "Users retrieved successfully", $users);
+    respond(200, "success", "Users retrieved successfully", [
+        "users" => $users,
+        "pagination" => [
+            "page" => $page,
+            "limit" => $limit,
+            "total" => $total,
+            "total_pages" => $totalPages
+        ]
+    ]);
 }
 
 /* ======================================================

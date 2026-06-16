@@ -1,14 +1,8 @@
 <?php
 
-header("Content-Type: application/json");
-
 require_once "config.php";
 require_once "jwt.php";
-
-function respond($data) {
-    echo json_encode($data);
-    exit;
-}
+require_once "response.php";
 
 /* =========================
    GET PATH
@@ -24,12 +18,7 @@ $path = str_replace($script, "", $uri);
 function requireAuth($authResult)
 {
     if (isset($authResult["error"])) {
-        http_response_code(401);
-
-        respond([
-            "status" => "error",
-            "message" => $authResult["error"]
-        ]);
+        respond(401, "error", $authResult["error"]);
     }
 
     return $authResult["user_id"];
@@ -43,13 +32,19 @@ if ($method === "GET" && $path === "/me") {
     $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer);
     $id = requireAuth($authResult);
 
-    $result = $conn->query("
+    $dbResult = $conn->query("
         SELECT id, name, email
         FROM users
         WHERE id=$id
     ");
 
-    respond($result->fetch_assoc());
+    $user = $dbResult->fetch_assoc();
+
+    if (!$user) {
+        respond(404, "error", "User not found");
+    }
+
+    respond(200, "success", "User profile retrieved", $user);
 }
 
 /* ======================================================
@@ -65,25 +60,20 @@ elseif ($method === "GET" && $path === "/users") {
 
         $email = $_GET["email"];
 
-        $result = $conn->query("
+        $dbResult = $conn->query("
             SELECT id, name, email
             FROM users
             WHERE email='$email'
             LIMIT 1
         ");
 
-        $user = $result->fetch_assoc();
+        $user = $dbResult->fetch_assoc();
 
         if (!$user) {
-            http_response_code(404);
-
-            respond([
-                "status" => "error",
-                "message" => "User not found"
-            ]);
+            respond(404, "error", "User not found");
         }
 
-        respond($user);
+        respond(200, "success", "User profile retrieved", $user);
     }
 
     /* all users */
@@ -104,26 +94,21 @@ elseif ($method === "GET" && $path === "/users") {
 
     /* backend check */
     if ($page > $totalPages) {
-        http_response_code(400);
-
-        respond([
-            "status" => "error",
-            "message" => "Page number exceeds available data"
-        ]);
+        respond(400, "error", "Page number exceeds available data");
     }
 
-    $result = $conn->query("
+    $dbResult = $conn->query("
         SELECT id, name, email
         FROM users
         LIMIT $limit OFFSET $offset
     ");
 
     $users = [];
-    while ($row = $result->fetch_assoc()) {
+    while ($row = $dbResult->fetch_assoc()) {
         $users[] = $row;
     }
 
-    respond($users);
+    respond(200, "success", "Users retrieved successfully", $users);
 }
 
 /* ======================================================
@@ -136,6 +121,10 @@ elseif ($method === "PUT" && $path === "/me") {
 
     $input = json_decode(file_get_contents("php://input"), true);
 
+    if (!isset($input["name"]) || !isset($input["email"])) {
+        respond(422, "error", "Name and email are required");
+    }
+
     $name = $input["name"];
     $email = $input["email"];
 
@@ -145,12 +134,7 @@ elseif ($method === "PUT" && $path === "/me") {
         WHERE id=$id
     ");
 
-    http_response_code(200);
-
-    respond([
-        "status" => "success",
-        "message" => "Profile updated successfully"
-    ]);
+    respond(200, "success", "Profile updated successfully");
 }
 
 /* ======================================================
@@ -163,22 +147,12 @@ elseif ($method === "DELETE" && $path === "/me") {
 
     $conn->query("DELETE FROM users WHERE id=$id");
 
-    http_response_code(200);
-
-    respond([
-        "status" => "success",
-        "message" => "Account deleted successfully"
-    ]);
+    respond(200, "success", "Account deleted successfully");
 }
 
 /* ======================================================
    FALLBACK
 ====================================================== */
 else {
-    http_response_code(404);
-
-    respond([
-        "status" => "error",
-        "message" => "Resource not found"
-    ]);
+    respond(404, "error", "Resource not found");
 }

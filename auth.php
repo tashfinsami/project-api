@@ -1,14 +1,8 @@
 <?php
 
-header("Content-Type: application/json");
-
 require_once "config.php";
 require_once "jwt.php";
-
-function respond($data) {
-    echo json_encode($data);
-    exit;
-}
+require_once "response.php";
 
 /* =========================
    GET PATH
@@ -40,13 +34,7 @@ if ($path === "/signup" && $method === "POST") {
     ");
 
     if ($check->num_rows > 0) {
-
-        http_response_code(409);
-
-        respond([
-            "status" => "error",
-            "message" => "Email already exists"
-        ]);
+        respond(409, "error", "Email already exists");
     }
 
     /* =========================
@@ -57,12 +45,7 @@ if ($path === "/signup" && $method === "POST") {
         VALUES('$name','$email','$password')
     ");
 
-    http_response_code(201);
-
-    respond([
-        "status" => "success",
-        "message" => "User created successfully"
-    ]);
+    respond(201, "success", "User created successfully");
 }
 
 /* =========================
@@ -76,20 +59,14 @@ if ($path === "/login" && $method === "POST") {
     /* =========================
        AUTHENTICATE USER
     ========================= */
-    $result = $conn->query("
+    $dbResult = $conn->query("
         SELECT * FROM users WHERE email='$email'
     ");
 
-    $user = $result->fetch_assoc();
+    $user = $dbResult->fetch_assoc();
 
     if (!$user || !password_verify($password, $user["password"])) {
-
-        http_response_code(401);
-
-        respond([
-            "status" => "error",
-            "message" => "Invalid credentials"
-        ]);
+        respond(401, "error", "Invalid credentials");
     }
     
     /* =========================
@@ -97,11 +74,7 @@ if ($path === "/login" && $method === "POST") {
     ========================= */
     $token = createToken($user["id"], $secret, $jwt_algorithm, $jwt_issuer, $jwt_expiry);
 
-    http_response_code(200);
-
-    respond([
-        "status" => "success",
-        "message" => "Login successful",
+    respond(200, "success", "Login successful", [
         "token" => $token
     ]);
 }
@@ -110,9 +83,4 @@ if ($path === "/login" && $method === "POST") {
    FALLBACK
 ========================= */
 
-http_response_code(404);
-
-respond([
-    "status" => "error",
-    "message" => "Resource not found"
-]);
+respond(404, "error", "Resource not found");

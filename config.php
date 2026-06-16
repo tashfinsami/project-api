@@ -4,19 +4,11 @@
    DATABASE CONNECTION
 ===================== */
 
-header("Content-Type: application/json");
-
 $conn = new mysqli("localhost", "root", "", "project_middleware");
 
 if ($conn->connect_error) {
-    http_response_code(500);
-
-    echo json_encode([
-        "status" => "error",
-        "message" => "Unable to connect to the database"
-    ]);
-
-    exit;
+   respond(500, "error", "Unable to connect to the database");
+   exit;
 }
 
 $conn->set_charset("utf8mb4");

@@ -24,7 +24,12 @@ $path = str_replace($script, "", $uri);
 function requireAuth($authResult)
 {
     if (isset($authResult["error"])) {
-        respond(["message" => $authResult["error"]]);
+        http_response_code(401);
+
+        respond([
+            "status" => "error",
+            "message" => $authResult["error"]
+        ]);
     }
 
     return $authResult["user_id"];
@@ -70,7 +75,12 @@ elseif ($method === "GET" && $path === "/users") {
         $user = $result->fetch_assoc();
 
         if (!$user) {
-            respond(["error" => "User not found"]);
+            http_response_code(404);
+
+            respond([
+                "status" => "error",
+                "message" => "User not found"
+            ]);
         }
 
         respond($user);
@@ -94,7 +104,12 @@ elseif ($method === "GET" && $path === "/users") {
 
     /* backend check */
     if ($page > $totalPages) {
-        respond(["error" => "Page out of range",]);
+        http_response_code(400);
+
+        respond([
+            "status" => "error",
+            "message" => "Page number exceeds available data"
+        ]);
     }
 
     $result = $conn->query("
@@ -130,7 +145,12 @@ elseif ($method === "PUT" && $path === "/me") {
         WHERE id=$id
     ");
 
-    respond(["message" => "Profile updated"]);
+    http_response_code(200);
+
+    respond([
+        "status" => "success",
+        "message" => "Profile updated successfully"
+    ]);
 }
 
 /* ======================================================
@@ -143,12 +163,22 @@ elseif ($method === "DELETE" && $path === "/me") {
 
     $conn->query("DELETE FROM users WHERE id=$id");
 
-    respond(["message" => "Account deleted"]);
+    http_response_code(200);
+
+    respond([
+        "status" => "success",
+        "message" => "Account deleted successfully"
+    ]);
 }
 
 /* ======================================================
    FALLBACK
 ====================================================== */
 else {
-    respond(["error" => "Route not found"]);
+    http_response_code(404);
+
+    respond([
+        "status" => "error",
+        "message" => "Resource not found"
+    ]);
 }

@@ -146,12 +146,39 @@ elseif ($method === "PUT" && $path === "/me") {
 
     $input = json_decode(file_get_contents("php://input"), true);
 
-    if (!isset($input["name"]) || !isset($input["email"])) {
-        respond(422, "error", "Name and email are required");
+    if (!$input) {
+        respond(400, "error", "Missing request body");
+        exit;
+    }
+
+    if (
+        !isset($input["name"]) || trim($input["name"]) === "" ||
+        !isset($input["email"]) || trim($input["email"]) === ""
+    ) {
+        respond(422, "error", "All fields are required");
+    }
+
+    $email = trim($input["email"]);
+    
+    /* check email format */
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        respond(422, "error", "Invalid email format");
     }
 
     $name = $input["name"];
     $email = $input["email"];
+
+    /* =========================
+       CHECK DUPLICATE EMAIL    
+       (EXCLUDING CURRENT ONE)
+    ========================= */
+    $check = $conn->query("
+        SELECT id FROM users WHERE email='$email' AND id!=$id LIMIT 1
+    ");
+
+    if ($check->num_rows > 0) {
+        respond(409, "error", "Email already exists");
+    }
 
     $conn->query("
         UPDATE users

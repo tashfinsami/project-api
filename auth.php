@@ -30,10 +30,30 @@ if (in_array($method, ["POST", "PUT", "PATCH"])) {
 ========================= */
 $data = json_decode(file_get_contents("php://input"), true);
 
+if (!$data) {
+   respond(400, "error", "Missing request body");
+   exit;
+}
+
 /* =========================
    SIGNUP
 ========================= */
 if ($path === "/signup" && $method === "POST") {
+
+    if (
+       !isset($data["name"]) || trim($data["name"]) === "" ||
+       !isset($data["email"]) || trim($data["email"]) === "" ||
+       !isset($data["password"]) || trim($data["password"]) === ""
+    ) {
+       respond(422, "error", "All fields are required");
+    }
+
+    $email = trim($data["email"]);
+
+    /* check email format */
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+       respond(422, "error", "Invalid email format");
+    }
 
     $name = $data["name"];
     $email = $data["email"];
@@ -65,6 +85,20 @@ if ($path === "/signup" && $method === "POST") {
    LOGIN
 ========================= */
 if ($path === "/login" && $method === "POST") {
+
+    if (
+       !isset($data["email"]) || trim($data["email"]) === "" ||
+       !isset($data["password"]) || trim($data["password"]) === ""
+    ) {
+       respond(422, "error", "All fields are required");
+    }
+
+    $email = trim($data["email"]);
+
+    /* check email format */
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+       respond(422, "error", "Invalid email format");
+    }
 
     $email = $data["email"];
     $password = $data["password"];

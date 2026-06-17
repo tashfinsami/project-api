@@ -13,6 +13,19 @@ $script = $_SERVER["SCRIPT_NAME"];
 $path = str_replace($script, "", $uri);
 
 /* =========================
+   PAYLOAD SIZE LIMIT
+========================= */
+if (in_array($method, ["POST", "PUT", "PATCH"])) {
+    $maxPayloadSize = 20 * 1024; //20 KB limit
+    if (
+        isset($_SERVER["CONTENT_LENGTH"]) &&
+        $_SERVER["CONTENT_LENGTH"] > $maxPayloadSize
+    ) {
+        respond(413, "error", "Payload too large");
+    }
+}
+
+/* =========================
    ENFORCE AUTHENTICATION
 ========================= */
 function requireAuth($authResult)

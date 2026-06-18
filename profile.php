@@ -3,6 +3,7 @@
 require_once "config.php";
 require_once "jwt.php";
 require_once "response.php";
+require_once "rate_limit.php";
 
 /* =========================
    GET PATH
@@ -37,6 +38,16 @@ function requireAuth($authResult)
     return $authResult["user_id"];
 }
 
+/* =========================
+   ENFORCE RATE LIMITING
+========================= */
+function handleRateLimit($rlResult)
+{
+    if (!$rlResult["allowed"]) {
+        respond(429, "error", "Too many requests");
+    }
+}
+
 /* ======================================================
    GET /me
 ====================================================== */
@@ -44,6 +55,10 @@ if ($method === "GET" && $path === "/me") {
 
     $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer);
     $id = requireAuth($authResult);
+
+    $key = $id . ":" . $method . ":" . $path;
+    $rlResult = rateLimit($key, 60, 60); //(key, limit, window_size)
+    handleRateLimit($rlResult);
 
     $dbResult = $conn->query("
         SELECT id, name, email
@@ -68,7 +83,11 @@ if ($method === "GET" && $path === "/me") {
 elseif ($method === "GET" && $path === "/users") {
 
     $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer); //for safety check only
-    $id = requireAuth($authResult); //only for safety checking
+    $id = requireAuth($authResult); 
+
+    $key = $id . ":" . $method . ":" . $path; 
+    $rlResult = rateLimit($key, 30, 60); //(key, limit, window_size)
+    handleRateLimit($rlResult);
 
     /* search by email */
     if (isset($_GET["email"])) {
@@ -144,6 +163,10 @@ elseif ($method === "PUT" && $path === "/me") {
     $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer);
     $id = requireAuth($authResult);
 
+    $key = $id . ":" . $method . ":" . $path;
+    $rlResult = rateLimit($key, 20, 60); //(key, limit, window_size)
+    handleRateLimit($rlResult);
+
     $input = json_decode(file_get_contents("php://input"), true);
 
     if (!$input) {
@@ -193,6 +216,13 @@ elseif ($method === "PUT" && $path === "/me") {
    DELETE /me
 ====================================================== */
 elseif ($method === "DELETE" && $path === "/me") {
+
+    $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer); //for safety check only
+    $id = requireAuth($authResult);
+
+    $key = $id . ":" . $method . ":" . $path;
+    $rlResult = rateLimit($key, 10, 60); //(key, limit, window_size)
+    handleRateLimit($rlResult);
 
     $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer);
     $id = requireAuth($authResult);

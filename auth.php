@@ -3,6 +3,7 @@
 require_once "config.php";
 require_once "jwt.php";
 require_once "response.php";
+require_once "rate_limit.php";
 
 /* =========================
    GET PATH
@@ -26,6 +27,16 @@ if (in_array($method, ["POST", "PUT", "PATCH"])) {
 }
 
 /* =========================
+   ENFORCE RATE LIMITING
+========================= */
+function handleRateLimit($rlResult)
+{
+    if (!$rlResult["allowed"]) {
+        respond(429, "error", "Too many requests");
+    }
+}
+
+/* =========================
    BODY
 ========================= */
 $data = json_decode(file_get_contents("php://input"), true);
@@ -39,6 +50,10 @@ if (!$data) {
    SIGNUP
 ========================= */
 if ($path === "/signup" && $method === "POST") {
+
+    $key = $_SERVER["REMOTE_ADDR"] . ":" . $method . ":" . $path;
+    $rlResult = rateLimit($key, 5, 60); //(key, limit, window_size)
+    handleRateLimit($rlResult);
 
     if (
        !isset($data["name"]) || trim($data["name"]) === "" ||
@@ -85,6 +100,12 @@ if ($path === "/signup" && $method === "POST") {
    LOGIN
 ========================= */
 if ($path === "/login" && $method === "POST") {
+
+    $key = $_SERVER["REMOTE_ADDR"] . ":" . $method . ":" . $path;
+    $rlResult = rateLimit($key, 5, 60); //(key, limit, window_size)
+    handleRateLimit($rlResult);
+
+    $key = $_SERVER["REMOTE_ADDR"] . ":" . $method . ":" . $path;
 
     if (
        !isset($data["email"]) || trim($data["email"]) === "" ||

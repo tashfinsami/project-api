@@ -1,40 +1,27 @@
 <?php
 
-function rateLimit($key, $limit = 60, $window = 60)
+function rateLimit($redis, $key, $limit = 60, $window = 60)
 {
-    $file = sys_get_temp_dir() . "/rate_" . md5($key);
+    $redisKey = "rate:" . md5($key);
 
-    $now = time();
+    // increment request count
+    $count = $redis->incr($redisKey); //atomic increment
 
-    $data = [
-        "count" => 0,
-        "start" => $now
-    ];
-
-    if (file_exists($file)) {
-        $data = json_decode(file_get_contents($file), true);
-
-        // reset window
-        if (($now - $data["start"]) >= $window) {
-            $data = [
-                "count" => 0,
-                "start" => $now
-            ];
-        }
+    // set expiry only on first request
+    if ($count == 1) {
+        $redis->expire($redisKey, $window); //key deleted automatically after time expires
     }
 
-    $data["count"]++;
-
-    file_put_contents($file, json_encode($data));
-
-    if ($data["count"] > $limit) {
+    // check limit
+    if ($count > $limit) {
         return [
             "allowed" => false,
-            "retry_after" => $window - ($now - $data["start"])
+            "retry_after" => $redis->ttl($redisKey) //time to live
         ];
     }
 
     return [
-        "allowed" => true
+        "allowed" => true,
+        "count" => $count
     ];
 }

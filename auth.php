@@ -32,7 +32,9 @@ if (in_array($method, ["POST", "PUT", "PATCH"])) {
 function handleRateLimit($rlResult)
 {
     if (!$rlResult["allowed"]) {
-        respond(429, "error", "Too many requests");
+        respond(429, "error", "Too many requests", [
+         "retry_after" => $rlResult["retry_after"]
+        ]);
     }
 }
 
@@ -52,7 +54,7 @@ if (!$data) {
 if ($path === "/signup" && $method === "POST") {
 
     $key = $_SERVER["REMOTE_ADDR"] . ":" . $method . ":" . $path;
-    $rlResult = rateLimit($key, 5, 60); //(key, limit, window_size)
+    $rlResult = rateLimit($redis, $key, 5, 60); //(redis, key, limit, window_size)
     handleRateLimit($rlResult);
 
     if (
@@ -102,7 +104,7 @@ if ($path === "/signup" && $method === "POST") {
 if ($path === "/login" && $method === "POST") {
 
     $key = $_SERVER["REMOTE_ADDR"] . ":" . $method . ":" . $path;
-    $rlResult = rateLimit($key, 5, 60); //(key, limit, window_size)
+    $rlResult = rateLimit($redis, $key, 5, 60); //(redis, key, limit, window_size)
     handleRateLimit($rlResult);
 
     $key = $_SERVER["REMOTE_ADDR"] . ":" . $method . ":" . $path;

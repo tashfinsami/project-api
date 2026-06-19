@@ -4,7 +4,7 @@
    DATABASE CONNECTION
 ===================== */
 
-$conn = new mysqli("localhost", "root", "", "project_middleware");
+$conn = new mysqli("127.0.0.1", "root", "", "project_middleware");
 
 if ($conn->connect_error) {
    respond(500, "error", "Unable to connect to the database");
@@ -25,3 +25,9 @@ $secret = file_get_contents("secret.key");
 $jwt_algorithm = "HS256";
 $jwt_issuer = "project_middleware";   
 $jwt_expiry = 900;     
+
+/* =====================
+   REDIS CONNECTION
+===================== */
+$redis = new Redis();
+$redis->connect("127.0.0.1", 6379);

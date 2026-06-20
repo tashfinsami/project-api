@@ -2,41 +2,71 @@
 
 /* =========================
    RATE LIMITER 
-   (SLIDING WINDOW LOG)
+   (SLIDING WINDOW COUNTER)
 ========================= */
 function rateLimit($redis, $key, $limit = 60, $window = 60)
 {
-    $redisKey = "rl:" . md5($key);
+    $now = microtime(true); //count in microsecs
 
-    $now = microtime(true); //count in millisecs
+    // window calculation
+    $currentWindow = floor($now / $window) * $window;
+    $previousWindow = $currentWindow - $window;
 
-    // remove old requests outside the window (on sorted list)
-    $redis->zRemRangeByScore($redisKey, 0, $now - $window); // (key, min_score, max_score)
+    $hash = md5($key);
 
-    // count requests in current window
-    $count = $redis->zCard($redisKey);
+    $currentKey = "rl:$hash:$currentWindow";
+    $previousKey = "rl:$hash:$previousWindow";
 
-    // if limit exceeded
-    if ($count >= $limit) {
-        // get oldest request timestamp for retry info
-        $oldest = $redis->zRange($redisKey, 0, 0, true); // (key, index, total_vals,  return score or not)
+    // lua script (for atomic execution)
+    $lua = <<<LUA
+-- KEYS[1] = current key
+-- KEYS[2] = previous key
+-- ARGV[1] = limit
+-- ARGV[2] = window
+-- ARGV[3] = now
 
-        $oldestTime = $oldest ? array_values($oldest)[0] : $now; // assign oldest timestamp or current timestamp(first req)
+local currentKey = KEYS[1]
+local previousKey = KEYS[2]
 
-        return [
-            "allowed" => false,
-            "retry_after" => ceil(($oldestTime + $window) - $now)
-        ];
-    }
+local limit = tonumber(ARGV[1])
+local window = tonumber(ARGV[2])
+local now = tonumber(ARGV[3])
 
-    // add current request
-    $redis->zAdd($redisKey, $now, uniqid("", true)); // (key, timestamp, unique req id)
+-- increment current window
+local currentCount = redis.call("INCR", currentKey)
 
-    // cleanup (to save memory)
-    $redis->expire($redisKey, $window); // delete key as not needed after (last timestamp + window) secs
+-- expire current key (for memory cleanup)
+redis.call("EXPIRE", currentKey, window * 2)
+
+-- get previous window count
+local previousCount = tonumber(redis.call("GET", previousKey) or "0")
+
+-- sliding calculation
+local currentWindowStart = math.floor(now / window) * window
+local elapsed = now - currentWindowStart
+
+local weight = (window - elapsed) / window
+
+local count = currentCount + (previousCount * weight)
+count = math.floor(count + 0.0000001)
+
+-- block or allow
+if count > limit then
+    return {0, count}
+end
+
+return {1, count}
+LUA;
+
+    // execute in redis
+    $result = $redis->eval(
+        $lua,
+        [$currentKey, $previousKey, $limit, $window, $now],
+        2
+    );
 
     return [
-        "allowed" => true,
-        "count" => $count + 1
+        "allowed" => $result[0] == 1,
+        "count" => $result[1]
     ];
 }

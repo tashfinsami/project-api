@@ -33,7 +33,7 @@ function handleRateLimit($rlResult)
 {
     if (!$rlResult["allowed"]) {
         respond(429, "error", "Too many requests", [
-         "retry_after" => $rlResult["retry_after"]
+         "count" => $rlResult["count"]
         ]);
     }
 }

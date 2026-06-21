@@ -76,7 +76,11 @@ if ($method === "GET" && $path === "/me") {
 
     respond(200, "success", "User profile retrieved", [
         "user" => $user
-    ], "private");
+    ], [
+        "cache" => "private",
+        "vary" => ["Authorization", "Accept-Encoding"],
+        "etag" => true
+    ]);
 }
 
 /* ======================================================
@@ -111,7 +115,11 @@ elseif ($method === "GET" && $path === "/users") {
 
         respond(200, "success", "User profile retrieved", [
             "user" => $user
-        ], "public");
+        ], [
+            "cache" => "public",
+            "vary" => ["Accept-Encoding"],
+            "etag" => true
+        ]);
     }
 
     /* all users */
@@ -154,7 +162,11 @@ elseif ($method === "GET" && $path === "/users") {
             "total" => $total,
             "total_pages" => $totalPages
         ]
-    ], "public");
+    ], [
+        "cache" => "public",
+        "vary" => ["Accept-Encoding"],
+        "etag" => true
+    ]);
 }
 
 /* ======================================================

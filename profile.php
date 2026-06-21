@@ -76,7 +76,7 @@ if ($method === "GET" && $path === "/me") {
 
     respond(200, "success", "User profile retrieved", [
         "user" => $user
-    ]);
+    ], "private");
 }
 
 /* ======================================================
@@ -111,7 +111,7 @@ elseif ($method === "GET" && $path === "/users") {
 
         respond(200, "success", "User profile retrieved", [
             "user" => $user
-        ]);
+        ], "public");
     }
 
     /* all users */
@@ -154,7 +154,7 @@ elseif ($method === "GET" && $path === "/users") {
             "total" => $total,
             "total_pages" => $totalPages
         ]
-    ]);
+    ], "public");
 }
 
 /* ======================================================

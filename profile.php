@@ -5,6 +5,10 @@ require_once "jwt.php";
 require_once "response.php";
 require_once "rate_limit.php";
 
+//$result = $conn->query("SELECT @@session.time_zone");
+//print_r($result->fetch_assoc());
+//exit;
+
 /* =========================
    GET PATH
 ========================= */
@@ -63,7 +67,7 @@ if ($method === "GET" && $path === "/me") {
     handleRateLimit($rlResult);
 
     $dbResult = $conn->query("
-        SELECT id, name, email
+        SELECT id, name, email, updated_at
         FROM users
         WHERE id=$id
     ");
@@ -74,12 +78,17 @@ if ($method === "GET" && $path === "/me") {
         respond(404, "error", "User not found");
     }
 
+    $lastModified = strtotime($user["updated_at"]);
+
+    unset($user['updated_at']);
+
     respond(200, "success", "User profile retrieved", [
         "user" => $user
     ], [
         "cache" => "private",
         "vary" => ["Authorization", "Accept-Encoding"],
-        "etag" => true
+        "etag" => true,
+        "last_modified" => $lastModified
     ]);
 }
 
@@ -101,7 +110,7 @@ elseif ($method === "GET" && $path === "/users") {
         $email = $_GET["email"];
 
         $dbResult = $conn->query("
-            SELECT id, name, email
+            SELECT id, name, email, updated_at
             FROM users
             WHERE email='$email'
             LIMIT 1
@@ -113,12 +122,17 @@ elseif ($method === "GET" && $path === "/users") {
             respond(404, "error", "User not found");
         }
 
+        $lastModified = strtotime($user["updated_at"]);
+
+        unset($user['updated_at']);
+
         respond(200, "success", "User profile retrieved", [
             "user" => $user
         ], [
             "cache" => "public",
             "vary" => ["Accept-Encoding"],
-            "etag" => true
+            "etag" => true, 
+            "last_modified" => $lastModified
         ]);
     }
 
@@ -154,6 +168,12 @@ elseif ($method === "GET" && $path === "/users") {
         $users[] = $row;
     }
 
+    /* get MAX updated_at */
+    $lastModifiedResult = $conn->query("SELECT MAX(updated_at) AS last_modified FROM users"); 
+    $lastModifiedRow = $lastModifiedResult->fetch_assoc(); 
+    $lastModified = strtotime($lastModifiedRow["last_modified"]);
+    unset($lastModifiedRow);
+
     respond(200, "success", "Users retrieved successfully", [
         "users" => $users,
         "pagination" => [
@@ -165,7 +185,8 @@ elseif ($method === "GET" && $path === "/users") {
     ], [
         "cache" => "public",
         "vary" => ["Accept-Encoding"],
-        "etag" => true
+        "etag" => true,
+        "last_modified" => $lastModified
     ]);
 }
 

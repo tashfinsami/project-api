@@ -2,7 +2,10 @@
 
 require_once "http_cache.php";
 
-function respond($statusCode, $status, $message, $data = null, $options = [])
+/* =====================
+   MANAGE CACHE HEADERS
+===================== */
+function handleCacheHeaders($data, $options = [])
 {
     applyCacheHeaders($options["cache"] ?? "no-store"); // defaulted to no-store to process all responses
 
@@ -10,13 +13,42 @@ function respond($statusCode, $status, $message, $data = null, $options = [])
         applyVary($options["vary"]);
     }
 
+    $etag = null;
+    $lastModified = null;
+
     if (($options["etag"] ?? false) && $data !== null) {
-        $etag = setETag($data);
+        $etag = generateETag($data);
         if (checkETag($etag)) {
             http_response_code(304);
             exit;
         }
     }
+
+    if (!empty($options["last_modified"])) {
+        $lastModified = is_numeric($options["last_modified"])
+            ? $options["last_modified"]
+            : strtotime($options["last_modified"]);
+        if ($lastModified && checkLastModified($lastModified)) {
+            http_response_code(304);
+            exit;
+        }
+    }
+
+    if ($etag) {
+        setEtag($etag);
+    }
+    
+    if ($lastModified) {
+        setLastModified($lastModified);
+    }
+}
+
+/* =====================
+   SEND RESPONSE
+===================== */
+function respond($statusCode, $status, $message, $data = null, $options = [])
+{
+    handleCacheHeaders($data, $options);
 
     http_response_code($statusCode);
 

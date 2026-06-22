@@ -45,20 +45,26 @@ function applyVary($headers = [])
     header("Vary: " . implode(", ", $headers));
 }
 
-
 /**
  * Generate and send ETag
  */
-function setETag($data)
+function generateETag($data)
 {
     $etag = '"' . md5(json_encode($data, JSON_UNESCAPED_SLASHES)) . '"';
-    header("ETag: $etag");
     return $etag;
+}
+
+/**
+ * Set ETag
+ */
+function setETag($etag)
+{
+    header("ETag: $etag");
 }
 
 
 /**
- * Check ETag and return 304 if matches
+ * Check ETag
  */
 function checkETag($etag)
 {
@@ -81,12 +87,11 @@ function setLastModified($timestamp)
 {
     $date = gmdate('D, d M Y H:i:s', $timestamp) . ' GMT';
     header("Last-Modified: $date");
-    return $timestamp;
 }
 
 
 /**
- * Check Last-Modified and return 304 if not modified
+ * Check Last-Modified
  */
 function checkLastModified($timestamp)
 {
@@ -95,19 +100,4 @@ function checkLastModified($timestamp)
     $clientTime = strtotime($header);
     if ($clientTime === false) return false;
     return (int)$clientTime >= (int)$timestamp;
-}
-
-
-/**
- * Combined helper (optional convenience function)
- */
-function cacheValidate($etag = null, $lastModified = null)
-{
-    if ($etag) {
-        checkETag($etag);
-    }
-
-    if ($lastModified) {
-        checkLastModified($lastModified);
-    }
 }

@@ -1,6 +1,12 @@
 <?php
 
 /* =====================
+   GLOBAL SETTINGS
+===================== */
+
+date_default_timezone_set('UTC');
+
+/* =====================
    DATABASE CONNECTION
 ===================== */
 
@@ -12,6 +18,8 @@ if ($conn->connect_error) {
 }
 
 $conn->set_charset("utf8mb4");
+
+$conn->query("SET time_zone = '+00:00'");
 
 
 /* =====================

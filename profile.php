@@ -5,10 +5,6 @@ require_once "jwt.php";
 require_once "response.php";
 require_once "rate_limit.php";
 
-//$result = $conn->query("SELECT @@session.time_zone");
-//print_r($result->fetch_assoc());
-//exit;
-
 /* =========================
    GET PATH
 ========================= */
@@ -33,13 +29,23 @@ if (in_array($method, ["POST", "PUT", "PATCH"])) {
 /* =========================
    ENFORCE AUTHENTICATION
 ========================= */
-function requireAuth($authResult)
+function requireAuth($secret, $algorithm, $issuer)
 {
-    if (isset($authResult["error"])) {
-        respond(401, "error", $authResult["error"]);
+    $tokenData = getBearerToken();
+
+    if (isset($tokenData["error"])) {
+        respond(401, "error", "Unauthorized");
     }
 
-    return $authResult["user_id"];
+    $token = $tokenData["token"];
+
+    $decodedData = verifyToken($token, $secret, $algorithm, $issuer);
+
+    if (isset($decodedData["error"])) {
+        respond(401, "error", "unauthorized");
+    }
+
+    return $decodedData["decoded"]->user_id;
 }
 
 /* =========================
@@ -59,8 +65,7 @@ function handleRateLimit($rlResult)
 ====================================================== */
 if ($method === "GET" && $path === "/me") {
 
-    $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer);
-    $id = requireAuth($authResult);
+    $id = requireAuth($secret, $jwt_algorithm, $jwt_issuer);
 
     $key = $id . ":" . $method . ":" . $path;
     $rlResult = rateLimit($redis, $key, 60, 60); //(redis, key, limit, window_size)
@@ -97,8 +102,7 @@ if ($method === "GET" && $path === "/me") {
 ====================================================== */
 elseif ($method === "GET" && $path === "/users") {
 
-    $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer); //for safety check only
-    $id = requireAuth($authResult); 
+    $id = requireAuth($secret, $jwt_algorithm, $jwt_issuer);
 
     $key = $id . ":" . $method . ":" . $path;
     $rlResult = rateLimit($redis, $key, 30, 60); //(redis, key, limit, window_size)
@@ -195,8 +199,7 @@ elseif ($method === "GET" && $path === "/users") {
 ====================================================== */
 elseif ($method === "PUT" && $path === "/me") {
 
-    $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer);
-    $id = requireAuth($authResult);
+    $id = requireAuth($secret, $jwt_algorithm, $jwt_issuer);
 
     $key = $id . ":" . $method . ":" . $path;
     $rlResult = rateLimit($redis, $key, 20, 60); //(redis, key, limit, window_size)
@@ -252,15 +255,11 @@ elseif ($method === "PUT" && $path === "/me") {
 ====================================================== */
 elseif ($method === "DELETE" && $path === "/me") {
 
-    $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer); //for safety check only
-    $id = requireAuth($authResult);
+    $id = requireAuth($secret, $jwt_algorithm, $jwt_issuer);
 
     $key = $id . ":" . $method . ":" . $path;
     $rlResult = rateLimit($redis, $key, 10, 60); //(redis, key, limit, window_size)
     handleRateLimit($rlResult);
-
-    $authResult = authenticateUser($secret, $jwt_algorithm, $jwt_issuer);
-    $id = requireAuth($authResult);
 
     $conn->query("DELETE FROM users WHERE id=$id");
 

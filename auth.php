@@ -27,6 +27,23 @@ if (in_array($method, ["POST", "PUT", "PATCH"])) {
 }
 
 /* =========================
+       ISSUE JWT
+========================= */
+function issueToken($userId, $secret, $algorithm, $issuer, $expirySeconds)
+{  
+   $payload = [
+      "iss" => $issuer,
+      "iat" => time(),
+      "exp" => time() + $expirySeconds,
+      "user_id" => $userId
+   ];
+
+   $token = generateToken($payload, $secret, $algorithm);
+
+   return $token;
+}
+
+/* =========================
    ENFORCE RATE LIMITING
 ========================= */
 function handleRateLimit($rlResult)
@@ -139,10 +156,7 @@ if ($path === "/login" && $method === "POST") {
         respond(401, "error", "Invalid credentials");
     }
     
-    /* =========================
-       ISSUE JWT
-    ========================= */
-    $token = createToken($user["id"], $secret, $jwt_algorithm, $jwt_issuer, $jwt_expiry);
+    $token = issueToken($user["id"], $secret, $jwt_algorithm, $jwt_issuer, $jwt_expiry);
 
     respond(200, "success", "Login successful", [
         "token" => $token

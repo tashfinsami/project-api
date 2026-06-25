@@ -6,24 +6,22 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
 /* =====================
-   CREATE TOKEN
+   GENERATE TOKEN
 ===================== */
-function createToken($userId, $secret, $algorithm, $issuer, $expirySeconds)
+function generateToken($payload, $secret, $algorithm)
 {
-    $payload = [
-        "iss" => $issuer,
-        "iat" => time(),
-        "exp" => time() + $expirySeconds,
-        "user_id" => $userId
-    ];
+    $defaultExpirySeconds = 900; //default ttl
+
+    $payload["iat"] = $payload["iat"] ?? time();
+    $payload["exp"] = $payload["exp"] ?? $payload["iat"] + $defaultExpirySeconds;
 
     return JWT::encode($payload, $secret, $algorithm);
 }
 
 /* =========================
-   GET TOKEN and VERIFY
+   GET BEARER TOKEN
 ========================= */
-function authenticateUser($secret, $algorithm, $issuer)
+function getBearerToken()
 {
     $headers = getallheaders();
     $auth = $headers["Authorization"] ?? "";
@@ -32,8 +30,18 @@ function authenticateUser($secret, $algorithm, $issuer)
         return ["error" => "Authentication token is missing"];
     }
 
-    $token = str_replace("Bearer ", "", $auth);
+    if (!preg_match('/Bearer\s(\S+)/', $auth, $matches)) {
+        return ["error" => "Authentication token is missing"];
+    }
 
+    return ["token" => $matches[1]];
+}
+
+/* =========================
+   VERIFY TOKEN
+========================= */
+function verifyToken($token, $secret, $algorithm, $issuer)
+{
     try {
         $decoded = JWT::decode($token, new Key($secret, $algorithm));
 
@@ -41,7 +49,7 @@ function authenticateUser($secret, $algorithm, $issuer)
             return ["error" => "Invalid token issuer"];
         }
 
-        return ["user_id" => $decoded->user_id];
+        return ["decoded" => $decoded];
 
     } catch (Exception $e) {
         return ["error" => "Authentication token is invalid or expired"];

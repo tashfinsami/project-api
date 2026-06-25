@@ -1,282 +1,293 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>User Dashboard</title>
-    <style>
-        body { font-family: Arial; margin: 20px; }
+    <head>
+        <script>
+            /* =====================
+                AUTO CHECK LOGIN
+            ===================== */
+            if (!localStorage.getItem("token")) {
+                window.location.href = "index.html";
+            }
+        </script>
 
-        .box {
-            border: 1px solid #ccc;
-            padding: 12px;
-            margin: 10px 0;
-        }
+        <title>User Dashboard</title>
 
-        input {
-            margin: 5px;
-            padding: 6px;
-        }
+        <style>
+            body { font-family: Arial; margin: 20px; }
 
-        button {
-            margin: 5px;
-            padding: 6px 10px;
-            cursor: pointer;
-        }
+            .dashboard-title {
+                border-bottom: 1px solid #ccc;
+                padding-bottom: 10px;
+                margin-bottom: 30px;
+            }
 
-        .section {
-            margin-bottom: 25px;
-        }
-    </style>
-</head>
+            .box {
+                border: 1px solid #ccc;
+                padding: 12px;
+                margin: 10px 0;
+            }
 
-<body>
+            input {
+                margin: 5px;
+                padding: 6px;
+            }
 
-<h2>My Dashboard</h2>
+            button {
+                margin: 5px;
+                padding: 6px 10px;
+                cursor: pointer;
+            }
 
-<div class="section">
-    <h3>Profile</h3>
-    <button onclick="loadMe()">Load Profile</button>
-    <div id="meBox" class="box"></div>
-</div>
+            .section {
+                margin-bottom: 25px;
+            }
+        </style>
+    </head>
 
-<hr>
+    <body>
 
-<div class="section">
-    <h3>Update Profile</h3>
+        <h2 class="dashboard-title">My Dashboard</h2>
 
-    <div class="box">
-        <input id="up_name" placeholder="New Name"><br>
-        <input id="up_email" placeholder="New Email"><br>
-        <button onclick="updateMe()">Update</button>
-    </div>
-</div>
+        <div class="section">
+            <h3>Profile</h3>
+            <!-- //already in window onload
+            <button onclick="loadMe()">Load Profile</button>
+            -->
+            <div id="meBox" class="box"></div>
+        </div>
 
-<hr>
+        <hr>
 
-<div class="section">
-    <h3>Delete Account</h3>
+        <div class="section">
+            <h3>Update Profile</h3>
 
-    <div class="box">
-        <p>Danger zone</p>
-        <button onclick="deleteMe()" style="background:red;color:white;">
-            Delete My Account
+            <div class="box">
+                <input id="up_name" placeholder="New Name"><br>
+                <input id="up_email" placeholder="New Email"><br>
+                <button onclick="updateMe()">Update</button>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="section">
+            <h3>Delete Account</h3>
+
+            <div class="box">
+                <p>Danger zone</p>
+                <button onclick="deleteMe()" style="background:red;color:white;">
+                    Delete My Account
+                </button>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="section">
+            <h3>All Users</h3>
+
+            <input id="pageInput" type="number" placeholder="Page number (at least 1)">
+            <button onclick="getAll()">Load Users</button>
+
+            <div id="list"></div>
+        </div>
+
+        <hr>
+
+        <div class="section">
+            <h3>Search by Email</h3>
+
+            <input id="searchEmail" placeholder="Email">
+            <button onclick="searchEmail()">Search</button>
+
+            <div id="emailBox"></div>
+        </div>
+
+        <hr>
+
+        <button onclick="logout()" style="background:#111;color:#fff;">
+            Logout
         </button>
-    </div>
-</div>
 
-<hr>
+        <script>
 
-<div class="section">
-    <h3>All Users</h3>
+        const API = "profile.php";
 
-    <input id="pageInput" type="number" placeholder="Page number (at least 1)">
-    <button onclick="getAll()">Load Users</button>
+        /* =====================
+        GET TOKEN
+        ===================== */
+        function getToken() {
+            return localStorage.getItem("token");
+        }
 
-    <div id="list"></div>
-</div>
+        /* =====================
+        AUTH HEADER
+        ===================== */
+        function authHeaders() {
+            return {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + getToken()
+            };
+        }
 
-<hr>
+        /* =====================
+        LOAD PROFILE
+        ===================== */
+        function loadMe() {
 
-<div class="section">
-    <h3>Search by Email</h3>
+            fetch(API + "/me", {
+                method: "GET",
+                headers: authHeaders()
+            })
+            .then(res => res.json())
+            .then(data => {
 
-    <input id="searchEmail" placeholder="Email">
-    <button onclick="searchEmail()">Search</button>
+                if (data.status === "error") {
+                    document.getElementById("meBox").innerHTML = data.message;
+                    return;
+                }
 
-    <div id="emailBox"></div>
-</div>
+                const user = data?.data?.user;
 
-<hr>
+                document.getElementById("meBox").innerHTML = `
+                    <b>ID:</b> ${user.id}<br>
+                    <b>Name:</b> ${user.name}<br>
+                    <b>Email:</b> ${user.email}
+                `;
+            });
+        }
 
-<button onclick="logout()" style="background:#111;color:#fff;">
-    Logout
-</button>
+        /* =====================
+        UPDATE PROFILE
+        ===================== */
+        function updateMe() {
 
-<script>
+            let name = document.getElementById("up_name").value;
+            let email = document.getElementById("up_email").value;
 
-const API = "profile.php";
+            fetch(API + "/me", {
+                method: "PUT",
+                headers: authHeaders(),
+                body: JSON.stringify({ name, email })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                loadMe();
+            });
+        }
 
-/* =====================
-   GET TOKEN
-===================== */
-function getToken() {
-    return localStorage.getItem("token");
-}
+        /* =====================
+        DELETE PROFILE
+        ===================== */
+        function deleteMe() {
 
-/* =====================
-   AUTH HEADER
-===================== */
-function authHeaders() {
-    return {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + getToken()
-    };
-}
+            if (!confirm("Are you sure?")) return;
 
-/* =====================
-   LOAD PROFILE
-===================== */
-function loadMe() {
+            fetch(API + "/me", {
+                method: "DELETE",
+                headers: authHeaders()
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                logout();
+            });
+        }
 
-    fetch(API + "/me", {
-        method: "GET",
-        headers: authHeaders()
-    })
-    .then(res => res.json())
-    .then(data => {
+        /* =====================
+        ALL USERS
+        ===================== */
+        function getAll() {
 
-        if (data.status === "error") {
-            document.getElementById("meBox").innerHTML = data.message;
+        // get page from input
+        let page = document.getElementById("pageInput").value;
+        //set limit
+        let limit = 5;
+
+        // frontend check
+        if (!page || page < 1) {
+            document.getElementById("list").innerHTML =
+                "Page must be a valid number";
             return;
         }
 
-        const user = data?.data?.user;
+        fetch(API + "/users?page=" + page + "&limit=" + limit, {
+            method: "GET",
+            headers: authHeaders()
+        })
+        .then(res => res.json())
+        .then(data => {
 
-        document.getElementById("meBox").innerHTML = `
-            <b>ID:</b> ${user.id}<br>
-            <b>Name:</b> ${user.name}<br>
-            <b>Email:</b> ${user.email}
-        `;
-    });
-}
+            if (data.status === "error") {
+                document.getElementById("list").innerHTML = data.message;
+                return;
+            }
 
-/* =====================
-   UPDATE PROFILE
-===================== */
-function updateMe() {
+            let html = "";
 
-    let name = document.getElementById("up_name").value;
-    let email = document.getElementById("up_email").value;
+            const users = data?.data?.users || [];
 
-    fetch(API + "/me", {
-        method: "PUT",
-        headers: authHeaders(),
-        body: JSON.stringify({ name, email })
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-        loadMe();
-    });
-}
+            users.forEach(user => {
+                html += `
+                    <div class="box">
+                        <b>ID:</b> ${user.id}<br>
+                        <b>Name:</b> ${user.name}<br>
+                        <b>Email:</b> ${user.email}
+                    </div>
+                `;
+            });
 
-/* =====================
-   DELETE PROFILE
-===================== */
-function deleteMe() {
-
-    if (!confirm("Are you sure?")) return;
-
-    fetch(API + "/me", {
-        method: "DELETE",
-        headers: authHeaders()
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-        logout();
-    });
-}
-
-/* =====================
-   ALL USERS
-===================== */
-function getAll() {
-
-// get page from input
-let page = document.getElementById("pageInput").value;
-//set limit
-let limit = 5;
-
-// frontend check
-if (!page || page < 1) {
-    document.getElementById("list").innerHTML =
-        "Page must be a valid number";
-    return;
-}
-
-fetch(API + "/users?page=" + page + "&limit=" + limit, {
-    method: "GET",
-    headers: authHeaders()
-})
-.then(res => res.json())
-.then(data => {
-
-    if (data.status === "error") {
-        document.getElementById("list").innerHTML = data.message;
-        return;
-    }
-
-    let html = "";
-
-    const users = data?.data?.users || [];
-
-    users.forEach(user => {
-        html += `
-            <div class="box">
-                <b>ID:</b> ${user.id}<br>
-                <b>Name:</b> ${user.name}<br>
-                <b>Email:</b> ${user.email}
-            </div>
-        `;
-    });
-
-    document.getElementById("list").innerHTML = html;
-});
-}
-
-/* =====================
-   SEARCH EMAIL
-===================== */
-function searchEmail() {
-
-    let email = document.getElementById("searchEmail").value;
-
-    fetch(API + "/users?email=" + encodeURIComponent(email), {
-        method: "GET",
-        headers: authHeaders()
-    })
-    .then(res => res.json())
-    .then(data => {
-
-        if (data.status === "error") {
-            document.getElementById("emailBox").innerHTML = data.message;
-            return;
+            document.getElementById("list").innerHTML = html;
+        });
         }
 
-        const user = data?.data?.user;
+        /* =====================
+        SEARCH EMAIL
+        ===================== */
+        function searchEmail() {
 
-        document.getElementById("emailBox").innerHTML = `
-            <div class="box">
-                <b>ID:</b> ${user.id}<br>
-                <b>Name:</b> ${user.name}<br>
-                <b>Email:</b> ${user.email}
-            </div>
-        `;
-    });
-}
+            let email = document.getElementById("searchEmail").value;
 
-/* =====================
-   LOGOUT (JWT STYLE)
-===================== */
-function logout() {
-    localStorage.removeItem("token");
-    window.location.href = "index.html";
-}
+            fetch(API + "/users?email=" + encodeURIComponent(email), {
+                method: "GET",
+                headers: authHeaders()
+            })
+            .then(res => res.json())
+            .then(data => {
 
-/* =====================
-   AUTO CHECK LOGIN
-===================== */
-window.onload = function () {
+                if (data.status === "error") {
+                    document.getElementById("emailBox").innerHTML = data.message;
+                    return;
+                }
 
-    if (!getToken()) {
-        window.location.href = "index.html";
-        return;
-    }
+                const user = data?.data?.user;
 
-    loadMe();
-};
+                document.getElementById("emailBox").innerHTML = `
+                    <div class="box">
+                        <b>ID:</b> ${user.id}<br>
+                        <b>Name:</b> ${user.name}<br>
+                        <b>Email:</b> ${user.email}
+                    </div>
+                `;
+            });
+        }
 
-</script>
+        /* =====================
+        LOGOUT (JWT STYLE)
+        ===================== */
+        function logout() {
+            localStorage.removeItem("token");
+            window.location.href = "index.html";
+        }
 
-</body>
+        /* =====================
+        AUTO LOAD DETAILS
+        ===================== */
+        window.onload = function () {
+            loadMe();
+        };
+
+        </script>
+    </body>
 </html>

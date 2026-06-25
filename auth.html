@@ -1,93 +1,103 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Auth System</title>
-    <style>
-        body { font-family: Arial; margin: 30px; }
-        input { display:block; margin:8px 0; padding:6px; }
-        button { padding:8px 12px; margin:5px 0; }
-        .box {
-            margin-top:15px;
-            padding:10px;
-            border:1px solid #ccc;
-            white-space: pre-wrap;
+    <head>
+        <script>
+            /* =====================
+                AUTO CHECK LOGIN
+            ===================== */
+            if (localStorage.getItem("token")) {
+                window.location.href = "index.html";
+            }
+        </script>
+
+        <title>Auth System</title>
+
+        <style>
+            body { font-family: Arial; margin: 30px; }
+            input { display:block; margin:8px 0; padding:6px; }
+            button { padding:8px 12px; margin:5px 0; }
+            .box {
+                margin-top:15px;
+                padding:10px;
+                border:1px solid #ccc;
+                white-space: pre-wrap;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <h2>Signup</h2>
+
+        <input id="su_name" placeholder="Name">
+        <input id="su_email" placeholder="Email">
+        <input id="su_password" placeholder="Password">
+        <button onclick="signup()">Signup</button>
+
+        <hr>
+
+        <h2>Login</h2>
+
+        <input id="li_email" placeholder="Email">
+        <input id="li_password" placeholder="Password">
+        <button onclick="login()">Login</button>
+
+        <hr>
+
+        <h3>Response</h3>
+        <div id="output" class="box"></div>
+
+        <script>
+
+        const API="auth.php";
+
+        /* =========================
+        SIGNUP
+        ========================= */
+        function signup() {
+
+            fetch(API + "/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: su_name.value,
+                    email: su_email.value,
+                    password: su_password.value
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                output.innerHTML = JSON.stringify(data, null, 2);
+            });
         }
-    </style>
-</head>
-<body>
 
-<h2>Signup</h2>
+        /* =========================
+        LOGIN
+        ========================= */
+        function login() {
 
-<input id="su_name" placeholder="Name">
-<input id="su_email" placeholder="Email">
-<input id="su_password" placeholder="Password">
-<button onclick="signup()">Signup</button>
+            fetch(API + "/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: li_email.value,
+                    password: li_password.value
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
 
-<hr>
+                output.innerHTML = JSON.stringify(data, null, 2);
 
-<h2>Login</h2>
+                const token = data?.data?.token;
 
-<input id="li_email" placeholder="Email">
-<input id="li_password" placeholder="Password">
-<button onclick="login()">Login</button>
-
-<hr>
-
-<h3>Response</h3>
-<div id="output" class="box"></div>
-
-<script>
-
-const API="auth.php";
-
-/* =========================
-   SIGNUP
-========================= */
-function signup() {
-
-    fetch(API + "/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            name: su_name.value,
-            email: su_email.value,
-            password: su_password.value
-        })
-    })
-    .then(r => r.json())
-    .then(data => {
-        output.innerHTML = JSON.stringify(data, null, 2);
-    });
-}
-
-/* =========================
-   LOGIN
-========================= */
-function login() {
-
-    fetch(API + "/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            email: li_email.value,
-            password: li_password.value
-        })
-    })
-    .then(r => r.json())
-    .then(data => {
-
-        output.innerHTML = JSON.stringify(data, null, 2);
-
-        const token = data?.data?.token;
-
-        if (token) {
-            localStorage.setItem("token", data.data.token);
-            window.location.href = "profile.html";
+                if (token) {
+                    localStorage.setItem("token", data.data.token);
+                    window.location.href = "profile.html";
+                }
+            });
         }
-    });
-}
 
-</script>
-
-</body>
+        </script>
+    </body>
 </html>

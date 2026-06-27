@@ -3,3 +3,18 @@ RewriteEngine On
 # Force HTTPS
 RewriteCond %{HTTPS} !=on
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# caching will not work with invalid SSL certificates
+# L -> stop checking, R -> redirect 301
+
+# Block direct .php access from browser
+RewriteCond %{THE_REQUEST} \.php/.+ [NC]
+RewriteRule ^ - [L,F]
+# F -> forbidden 403
+
+# Internal rewrite: ex. /auth/me → auth.php/me
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([^/]+)(/.*)?$ $1.php$2 [L,QSA]
+# -f -> file, -d -> folder
+# QSA -> query string append

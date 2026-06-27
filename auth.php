@@ -9,9 +9,7 @@ require_once "rate_limit.php";
    GET PATH
 ========================= */
 $method = $_SERVER["REQUEST_METHOD"];
-$uri = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
-$script = $_SERVER["SCRIPT_NAME"];
-$path = str_replace($script, "", $uri);
+$path = $_SERVER["PATH_INFO"] ?? "/"; // adjusted for api access without .php extension
 
 /* =========================
    PAYLOAD SIZE LIMIT

@@ -1,6 +1,6 @@
 <script>
 
-    const API = "profile.php";
+    const API = "profile"; //secure api access
     
     function getToken() {
         return localStorage.getItem("token");
@@ -18,7 +18,7 @@
         fetch(API + "/me", {
             method: "GET",
             headers: {
-                "Authorization": "Bearer " + getToken()
+                "Authorization": "Bearer " + token
             }
         })
         .then(res => res.json())

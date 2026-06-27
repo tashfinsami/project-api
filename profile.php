@@ -9,9 +9,7 @@ require_once "rate_limit.php";
    GET PATH
 ========================= */
 $method = $_SERVER["REQUEST_METHOD"];
-$uri = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
-$script = $_SERVER["SCRIPT_NAME"];
-$path = str_replace($script, "", $uri);
+$path = $_SERVER["PATH_INFO"] ?? "/"; // adjusted for api access without .php extension
 
 /* =========================
    PAYLOAD SIZE LIMIT
@@ -91,7 +89,7 @@ if ($method === "GET" && $path === "/me") {
         "user" => $user
     ], [
         "cache" => "private",
-        "vary" => ["Authorization", "Accept-Encoding"],
+        "vary" => ["Authorization"],
         "etag" => true,
         "last_modified" => $lastModified
     ]);
@@ -134,7 +132,6 @@ elseif ($method === "GET" && $path === "/users") {
             "user" => $user
         ], [
             "cache" => "public",
-            "vary" => ["Accept-Encoding"],
             "etag" => true, 
             "last_modified" => $lastModified
         ]);
@@ -188,7 +185,6 @@ elseif ($method === "GET" && $path === "/users") {
         ]
     ], [
         "cache" => "public",
-        "vary" => ["Accept-Encoding"],
         "etag" => true,
         "last_modified" => $lastModified
     ]);

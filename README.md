@@ -127,6 +127,26 @@ Instead, the project is composed of small PHP modules responsible for individual
                        MySQL
 ```
 
+## API Routing
+
+The API uses Apache's `.htaccess` file to route clean API URLs
+to the corresponding PHP files.
+
+| API Route | PHP File |
+|-----------|----------|
+| `POST /auth/signup` | `auth.php` |
+| `POST /auth/login` | `auth.php` |
+| `GET /profile/me` | `profile.php` |
+| `GET /profile/users` | `profile.php` |
+| `PUT /profile/me` | `profile.php` |
+| `DELETE /profile/me` | `profile.php` |
+
+The routing is implemented using Apache rewrite rules rather than a
+PHP web framework.
+
+This allows the API to expose clean REST-style endpoints while
+keeping the underlying PHP files separate from the public API URLs.
+
 ## API Endpoints
 
 ### Authentication
